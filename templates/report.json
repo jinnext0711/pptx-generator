@@ -1,0 +1,14 @@
+{
+    "name": "report",
+    "description": "データレポート向け（テーブルとグラフ重視）",
+    "slide_width_inches": 13.333,
+    "slide_height_inches": 7.5,
+    "style": {
+        "font_name": "Meiryo",
+        "title_size_pt": 24,
+        "subtitle_size_pt": 16,
+        "heading_size_pt": 20,
+        "body_size_pt": 12,
+        "accent_color": "2E75B6"
+    }
+}

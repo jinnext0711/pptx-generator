@@ -1,0 +1,14 @@
+{
+    "name": "default",
+    "description": "汎用プレゼンテーション",
+    "slide_width_inches": 13.333,
+    "slide_height_inches": 7.5,
+    "style": {
+        "font_name": "Meiryo",
+        "title_size_pt": 28,
+        "subtitle_size_pt": 18,
+        "heading_size_pt": 24,
+        "body_size_pt": 14,
+        "accent_color": "4472C4"
+    }
+}

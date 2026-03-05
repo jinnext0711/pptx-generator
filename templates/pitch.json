@@ -1,0 +1,14 @@
+{
+    "name": "pitch",
+    "description": "提案・ピッチ向け（インパクト重視）",
+    "slide_width_inches": 13.333,
+    "slide_height_inches": 7.5,
+    "style": {
+        "font_name": "Calibri",
+        "title_size_pt": 36,
+        "subtitle_size_pt": 20,
+        "heading_size_pt": 28,
+        "body_size_pt": 18,
+        "accent_color": "E74C3C"
+    }
+}
