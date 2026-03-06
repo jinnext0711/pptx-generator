@@ -24,6 +24,12 @@ STYLE = {
 # テンプレートディレクトリ
 TEMPLATE_DIR = "templates"
 
+# カラースキームディレクトリ
+COLOR_DIR = "colors"
+
+# デフォルトカラースキーム
+DEFAULT_COLOR = "blue"
+
 # スライドサイズ（ワイドスクリーン 16:9）
 SLIDE_WIDTH_INCHES = 13.333
 SLIDE_HEIGHT_INCHES = 7.5

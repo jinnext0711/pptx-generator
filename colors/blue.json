@@ -1,0 +1,15 @@
+{
+    "name": "blue",
+    "description": "ブルー系 - ビジネス・信頼感",
+    "accent_color": "4472C4",
+    "accent_light": "D6E4F0",
+    "secondary_color": "2E75B6",
+    "text_color": "333333",
+    "heading_color": "1F4E79",
+    "bg_color": "FFFFFF",
+    "table_header_bg": "4472C4",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "D6E4F0",
+    "section_bg": "4472C4",
+    "section_text": "FFFFFF"
+}

@@ -8,7 +8,7 @@
         "title_size_pt": 28,
         "subtitle_size_pt": 18,
         "heading_size_pt": 24,
-        "body_size_pt": 14,
-        "accent_color": "4472C4"
-    }
+        "body_size_pt": 14
+    },
+    "default_color": "blue"
 }

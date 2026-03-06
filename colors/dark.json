@@ -1,0 +1,15 @@
+{
+    "name": "dark",
+    "description": "ダーク系 - モダン・スタイリッシュ",
+    "accent_color": "3498DB",
+    "accent_light": "2C3E50",
+    "secondary_color": "1ABC9C",
+    "text_color": "ECF0F1",
+    "heading_color": "FFFFFF",
+    "bg_color": "2C3E50",
+    "table_header_bg": "34495E",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "3D566E",
+    "section_bg": "3498DB",
+    "section_text": "FFFFFF"
+}

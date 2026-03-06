@@ -1,0 +1,15 @@
+{
+    "name": "green",
+    "description": "グリーン系 - 自然・成長",
+    "accent_color": "27AE60",
+    "accent_light": "D5F5E3",
+    "secondary_color": "2ECC71",
+    "text_color": "333333",
+    "heading_color": "1E8449",
+    "bg_color": "FFFFFF",
+    "table_header_bg": "27AE60",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "D5F5E3",
+    "section_bg": "27AE60",
+    "section_text": "FFFFFF"
+}

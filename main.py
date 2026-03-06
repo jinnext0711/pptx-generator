@@ -38,9 +38,18 @@ def main():
         help="データ取得元URL"
     )
     parser.add_argument(
+        "--color", "-c",
+        help="カラースキーム名（デフォルト: テンプレートの色設定を使用）"
+    )
+    parser.add_argument(
         "--list-templates",
         action="store_true",
         help="利用可能なテンプレート一覧を表示"
+    )
+    parser.add_argument(
+        "--list-colors",
+        action="store_true",
+        help="利用可能なカラースキーム一覧を表示"
     )
 
     args = parser.parse_args()
@@ -54,6 +63,17 @@ def main():
             print("利用可能なテンプレート:")
             for t in templates:
                 print(f"  {t['name']:15s} - {t['description']}")
+        return
+
+    # カラースキーム一覧表示
+    if args.list_colors:
+        colors = PresentationBuilder.list_colors()
+        if not colors:
+            print("カラースキームが見つかりません。")
+        else:
+            print("利用可能なカラースキーム:")
+            for c in colors:
+                print(f"  {c['name']:15s} - {c['description']}  (#{c['accent_color']})")
         return
 
     # 入力データの取得
@@ -86,8 +106,9 @@ def main():
         output_path = os.path.join(config.OUTPUT["dir"], f"{timestamp}.pptx")
 
     # プレゼンテーション生成
-    print(f"テンプレート '{args.template}' でプレゼンテーションを生成しています...")
-    builder = PresentationBuilder(template_name=args.template)
+    color_info = f"、カラー '{args.color}'" if args.color else ""
+    print(f"テンプレート '{args.template}'{color_info} でプレゼンテーションを生成しています...")
+    builder = PresentationBuilder(template_name=args.template, color_name=args.color)
     builder.build(data)
 
     saved_path = builder.save(output_path)

@@ -1,0 +1,15 @@
+{
+    "name": "purple",
+    "description": "パープル系 - 高級感・創造性",
+    "accent_color": "8E44AD",
+    "accent_light": "E8DAEF",
+    "secondary_color": "9B59B6",
+    "text_color": "333333",
+    "heading_color": "6C3483",
+    "bg_color": "FFFFFF",
+    "table_header_bg": "8E44AD",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "E8DAEF",
+    "section_bg": "8E44AD",
+    "section_text": "FFFFFF"
+}

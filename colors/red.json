@@ -1,0 +1,15 @@
+{
+    "name": "red",
+    "description": "レッド系 - 情熱・インパクト",
+    "accent_color": "C0392B",
+    "accent_light": "F5D7D5",
+    "secondary_color": "E74C3C",
+    "text_color": "333333",
+    "heading_color": "922B21",
+    "bg_color": "FFFFFF",
+    "table_header_bg": "C0392B",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "F5D7D5",
+    "section_bg": "C0392B",
+    "section_text": "FFFFFF"
+}

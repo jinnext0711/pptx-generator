@@ -14,19 +14,32 @@ from src.slide_factory import SLIDE_TYPES
 class PresentationBuilder:
     """プレゼンテーション組み立てクラス"""
 
-    def __init__(self, template_name=None, style_config=None):
+    def __init__(self, template_name=None, color_name=None, style_config=None):
         """
         Args:
             template_name: テンプレート名（templates/配下のJSONファイル名）
+            color_name: カラースキーム名（colors/配下のJSONファイル名）
             style_config: スタイル設定（省略時はconfig.pyのデフォルト）
         """
         self.style = dict(config.STYLE)
         self.template_config = None
+        self.color_config = None
         self.prs = None
 
-        # テンプレート読み込み
+        # テンプレート読み込み（フォントサイズ等の構造設定）
         if template_name:
             self._load_template(template_name)
+
+        # カラースキーム決定（優先順位: CLI指定 > テンプレートのdefault_color > config.DEFAULT_COLOR）
+        effective_color = color_name
+        if not effective_color and self.template_config:
+            effective_color = self.template_config.get("default_color")
+        if not effective_color:
+            effective_color = config.DEFAULT_COLOR
+
+        # カラースキーム読み込み
+        if effective_color:
+            self._load_color(effective_color)
 
         # スタイル上書き
         if style_config:
@@ -47,9 +60,62 @@ class PresentationBuilder:
         with open(template_path, "r", encoding="utf-8") as f:
             self.template_config = json.load(f)
 
-        # テンプレートのスタイルを適用
+        # テンプレートのスタイルを適用（色以外のフォントサイズ等）
         if "style" in self.template_config:
-            self.style.update(self.template_config["style"])
+            template_style = dict(self.template_config["style"])
+            # テンプレートの色設定はカラースキーム未指定時のみ適用
+            self.style.update(template_style)
+
+    def _load_color(self, color_name):
+        """カラースキームJSONを読み込む"""
+        color_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            config.COLOR_DIR,
+            f"{color_name}.json"
+        )
+
+        if not os.path.exists(color_path):
+            print(f"警告: カラースキーム '{color_name}' が見つかりません。デフォルト設定を使用します。")
+            return
+
+        with open(color_path, "r", encoding="utf-8") as f:
+            self.color_config = json.load(f)
+
+        # カラースキームの色設定をスタイルに適用（テンプレートの色を上書き）
+        color_keys = [
+            "accent_color", "accent_light", "secondary_color",
+            "text_color", "heading_color", "bg_color",
+            "table_header_bg", "table_header_text", "table_alt_row",
+            "section_bg", "section_text",
+        ]
+        for key in color_keys:
+            if key in self.color_config:
+                self.style[key] = self.color_config[key]
+
+    @staticmethod
+    def list_colors():
+        """利用可能なカラースキーム一覧を返す"""
+        color_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            config.COLOR_DIR
+        )
+
+        colors = []
+        if not os.path.exists(color_dir):
+            return colors
+
+        for filename in sorted(os.listdir(color_dir)):
+            if filename.endswith(".json"):
+                filepath = os.path.join(color_dir, filename)
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                colors.append({
+                    "name": os.path.splitext(filename)[0],
+                    "description": data.get("description", ""),
+                    "accent_color": data.get("accent_color", ""),
+                })
+
+        return colors
 
     def build(self, data):
         """データからプレゼンテーションを組み立てる

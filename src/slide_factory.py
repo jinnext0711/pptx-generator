@@ -1,20 +1,36 @@
 """
 スライド種別ごとの生成関数
+カラースキームのキーを参照して色を決定する
 """
 from pptx.util import Inches, Pt, Emu
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
 
-from src.style import apply_font, hex_to_rgb, COLORS, LAYOUT
+from src.style import apply_font, hex_to_rgb, LAYOUT
+
+
+def _get_color(style, key, fallback):
+    """スタイルからカラーを取得するヘルパー"""
+    color_hex = style.get(key, fallback)
+    return hex_to_rgb(color_hex)
 
 
 def add_title_slide(prs, data, style):
     """タイトルスライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])  # 空白レイアウト
 
-    # 背景にアクセントカラーの帯
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+    accent = _get_color(style, "accent_color", "4472C4")
+    text_color = _get_color(style, "text_color", "333333")
+    heading_color = _get_color(style, "heading_color", "333333")
+    bg_color = style.get("bg_color", "FFFFFF")
+
+    # 背景色の適用
+    if bg_color != "FFFFFF":
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = hex_to_rgb(bg_color)
 
     # タイトルテキストボックス
     left = Inches(1.0)
@@ -29,7 +45,7 @@ def add_title_slide(prs, data, style):
     run = p.add_run()
     run.text = data.get("title", "")
     apply_font(run, style.get("font_name", "Meiryo"),
-               style.get("title_size_pt", 28), COLORS["dark"], bold=True)
+               style.get("title_size_pt", 28), heading_color, bold=True)
 
     # サブタイトル
     subtitle = data.get("subtitle", "")
@@ -52,14 +68,14 @@ def add_title_slide(prs, data, style):
         p3.space_before = Pt(24)
         run3 = p3.add_run()
         run3.text = info_text
-        apply_font(run3, style.get("font_name", "Meiryo"), 12, COLORS["dark"])
+        apply_font(run3, style.get("font_name", "Meiryo"), 12, text_color)
 
     # アクセントライン
     line_left = Inches(4.0)
     line_top = Inches(2.2)
     line_width = Inches(5.3)
     line = slide.shapes.add_shape(
-        1, line_left, line_top, line_width, Pt(4)  # 1 = Rectangle
+        1, line_left, line_top, line_width, Pt(4)
     )
     line.fill.solid()
     line.fill.fore_color.rgb = accent
@@ -69,7 +85,16 @@ def add_title_slide(prs, data, style):
 def add_content_slide(prs, data, style):
     """箇条書きコンテンツスライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+    accent = _get_color(style, "accent_color", "4472C4")
+    text_color = _get_color(style, "text_color", "333333")
+    bg_color = style.get("bg_color", "FFFFFF")
+
+    # 背景色
+    if bg_color != "FFFFFF":
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = hex_to_rgb(bg_color)
 
     # スライドタイトル
     _add_slide_title(slide, data.get("title", ""), style, accent)
@@ -101,13 +126,27 @@ def add_content_slide(prs, data, style):
         # 箇条書きマーカー
         run = p.add_run()
         run.text = f"● {item}"
-        apply_font(run, font_name, body_size, COLORS["dark"])
+        apply_font(run, font_name, body_size, text_color)
 
 
 def add_table_slide(prs, data, style):
     """テーブルスライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+    accent = _get_color(style, "accent_color", "4472C4")
+    text_color = _get_color(style, "text_color", "333333")
+    bg_color = style.get("bg_color", "FFFFFF")
+
+    # テーブル固有の色（カラースキームから取得）
+    header_bg = _get_color(style, "table_header_bg", style.get("accent_color", "4472C4"))
+    header_text = _get_color(style, "table_header_text", "FFFFFF")
+    alt_row = _get_color(style, "table_alt_row", "F2F2F2")
+
+    # 背景色
+    if bg_color != "FFFFFF":
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = hex_to_rgb(bg_color)
 
     _add_slide_title(slide, data.get("title", ""), style, accent)
 
@@ -116,7 +155,7 @@ def add_table_slide(prs, data, style):
     if not headers and not rows:
         return
 
-    num_rows = len(rows) + 1  # ヘッダー行含む
+    num_rows = len(rows) + 1
     num_cols = len(headers) if headers else (len(rows[0]) if rows else 0)
     if num_cols == 0:
         return
@@ -135,12 +174,11 @@ def add_table_slide(prs, data, style):
     for j, header in enumerate(headers):
         cell = table.cell(0, j)
         cell.text = str(header)
-        # ヘッダーの背景色
         cell.fill.solid()
-        cell.fill.fore_color.rgb = accent
+        cell.fill.fore_color.rgb = header_bg
         for paragraph in cell.text_frame.paragraphs:
             for run in paragraph.runs:
-                apply_font(run, font_name, 12, COLORS["white"], bold=True)
+                apply_font(run, font_name, 12, header_text, bold=True)
 
     # データ行
     for i, row in enumerate(rows):
@@ -152,16 +190,24 @@ def add_table_slide(prs, data, style):
             # 交互の行色
             if i % 2 == 0:
                 cell.fill.solid()
-                cell.fill.fore_color.rgb = COLORS["light_gray"]
+                cell.fill.fore_color.rgb = alt_row
             for paragraph in cell.text_frame.paragraphs:
                 for run in paragraph.runs:
-                    apply_font(run, font_name, 11, COLORS["dark"])
+                    apply_font(run, font_name, 11, text_color)
 
 
 def add_chart_slide(prs, data, style):
     """グラフスライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+    accent = _get_color(style, "accent_color", "4472C4")
+    bg_color = style.get("bg_color", "FFFFFF")
+
+    # 背景色
+    if bg_color != "FFFFFF":
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = hex_to_rgb(bg_color)
 
     _add_slide_title(slide, data.get("title", ""), style, accent)
 
@@ -193,7 +239,6 @@ def add_chart_slide(prs, data, style):
 
     chart_shape = slide.shapes.add_chart(chart_type, left, top, width, height, chart_data)
 
-    # グラフのフォント設定
     chart = chart_shape.chart
     chart.has_legend = len(series_list) > 1
     if chart.has_legend:
@@ -203,7 +248,16 @@ def add_chart_slide(prs, data, style):
 def add_image_slide(prs, data, style):
     """画像スライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+    accent = _get_color(style, "accent_color", "4472C4")
+    text_color = _get_color(style, "text_color", "333333")
+    bg_color = style.get("bg_color", "FFFFFF")
+
+    # 背景色
+    if bg_color != "FFFFFF":
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = hex_to_rgb(bg_color)
 
     _add_slide_title(slide, data.get("title", ""), style, accent)
 
@@ -212,13 +266,11 @@ def add_image_slide(prs, data, style):
         return
 
     try:
-        # 画像を中央配置
         left = Inches(2.0)
         top = LAYOUT["margin_top"]
         height = LAYOUT["content_height"]
         slide.shapes.add_picture(image_path, left, top, height=height)
     except Exception:
-        # 画像が見つからない場合はテキストで代替
         txBox = slide.shapes.add_textbox(
             LAYOUT["margin_left"], LAYOUT["margin_top"],
             LAYOUT["content_width"], Inches(1.0)
@@ -227,21 +279,24 @@ def add_image_slide(prs, data, style):
         p = tf.paragraphs[0]
         run = p.add_run()
         run.text = f"[画像が見つかりません: {image_path}]"
-        apply_font(run, style.get("font_name", "Meiryo"), 14, COLORS["dark"])
+        apply_font(run, style.get("font_name", "Meiryo"), 14, text_color)
 
 
 def add_section_slide(prs, data, style):
     """セクション区切りスライドを追加"""
     slide = prs.slides.add_slide(prs.slide_layouts[6])
-    accent = hex_to_rgb(style.get("accent_color", "4472C4"))
+
+    # セクション固有の色（カラースキームから取得）
+    section_bg = _get_color(style, "section_bg", style.get("accent_color", "4472C4"))
+    section_text = _get_color(style, "section_text", "FFFFFF")
 
     # 背景塗りつぶし
     background = slide.background
     fill = background.fill
     fill.solid()
-    fill.fore_color.rgb = accent
+    fill.fore_color.rgb = section_bg
 
-    # セクションタイトル（中央配置、白文字）
+    # セクションタイトル（中央配置）
     left = Inches(1.0)
     top = Inches(2.8)
     width = Inches(11.3)
@@ -254,13 +309,15 @@ def add_section_slide(prs, data, style):
     run = p.add_run()
     run.text = data.get("title", "")
     apply_font(run, style.get("font_name", "Meiryo"),
-               style.get("heading_size_pt", 24), COLORS["white"], bold=True)
+               style.get("heading_size_pt", 24), section_text, bold=True)
 
 
 def _add_slide_title(slide, title_text, style, accent_color):
     """各スライドのタイトルを追加するヘルパー"""
     if not title_text:
         return
+
+    heading_color = _get_color(style, "heading_color", "333333")
 
     left = LAYOUT["margin_left"]
     top = LAYOUT["title_top"]
@@ -274,7 +331,7 @@ def _add_slide_title(slide, title_text, style, accent_color):
     run = p.add_run()
     run.text = title_text
     apply_font(run, style.get("font_name", "Meiryo"),
-               style.get("heading_size_pt", 24), COLORS["dark"], bold=True)
+               style.get("heading_size_pt", 24), heading_color, bold=True)
 
     # タイトル下のアクセントライン
     line = slide.shapes.add_shape(

@@ -68,9 +68,31 @@ class TestPresentationBuilder:
             os.unlink(path)
 
     def test_template_loading(self):
-        """テンプレート読み込み"""
+        """テンプレート読み込み（default_colorでblueが適用される）"""
         builder = PresentationBuilder(template_name="default")
         assert builder.style["accent_color"] == "4472C4"
+
+    def test_color_scheme_loading(self):
+        """カラースキーム指定"""
+        builder = PresentationBuilder(color_name="red")
+        assert builder.style["accent_color"] == "C0392B"
+
+    def test_color_overrides_template_default(self):
+        """CLI指定のカラーがテンプレートのdefault_colorを上書き"""
+        # pitchテンプレートのdefault_colorはredだが、greenを指定
+        builder = PresentationBuilder(template_name="pitch", color_name="green")
+        assert builder.style["accent_color"] == "27AE60"
+
+    def test_template_default_color(self):
+        """テンプレートのdefault_colorが適用される"""
+        # pitchテンプレートはdefault_color: "red"
+        builder = PresentationBuilder(template_name="pitch")
+        assert builder.style["accent_color"] == "C0392B"
+
+    def test_dark_color_bg(self):
+        """ダークカラースキームの背景色設定"""
+        builder = PresentationBuilder(color_name="dark")
+        assert builder.style["bg_color"] == "2C3E50"
 
     def test_list_templates(self):
         """テンプレート一覧"""
@@ -79,6 +101,15 @@ class TestPresentationBuilder:
         assert "default" in names
         assert "report" in names
         assert "pitch" in names
+
+    def test_list_colors(self):
+        """カラースキーム一覧"""
+        colors = PresentationBuilder.list_colors()
+        names = [c["name"] for c in colors]
+        assert "blue" in names
+        assert "red" in names
+        assert "dark" in names
+        assert "green" in names
 
 
 class TestDataLoader:

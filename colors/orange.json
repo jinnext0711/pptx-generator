@@ -1,0 +1,15 @@
+{
+    "name": "orange",
+    "description": "オレンジ系 - 活気・クリエイティブ",
+    "accent_color": "E67E22",
+    "accent_light": "FDEBD0",
+    "secondary_color": "F39C12",
+    "text_color": "333333",
+    "heading_color": "A04000",
+    "bg_color": "FFFFFF",
+    "table_header_bg": "E67E22",
+    "table_header_text": "FFFFFF",
+    "table_alt_row": "FDEBD0",
+    "section_bg": "E67E22",
+    "section_text": "FFFFFF"
+}
