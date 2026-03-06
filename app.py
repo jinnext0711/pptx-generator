@@ -36,27 +36,134 @@ st.markdown("""
         vertical-align: middle;
         margin-right: 6px;
     }
-    .color-swatch.selected {
-        border: 3px solid #333;
-        box-shadow: 0 0 4px rgba(0,0,0,0.3);
-    }
     /* スライドプレビューカード */
-    .slide-card {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 8px;
-    }
-    .slide-type-badge {
-        background: #e9ecef;
+    .slide-preview {
+        background: #fff;
+        border: 1px solid #ccc;
         border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 0.8em;
-        color: #495057;
+        padding: 8px;
+        margin-bottom: 10px;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        position: relative;
+        font-family: 'Meiryo', sans-serif;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .slide-preview .slide-num {
+        position: absolute;
+        top: 3px;
+        left: 6px;
+        font-size: 9px;
+        color: #999;
+    }
+    .slide-preview .slide-badge {
+        position: absolute;
+        top: 3px;
+        right: 6px;
+        font-size: 8px;
+        background: rgba(0,0,0,0.08);
+        padding: 1px 5px;
+        border-radius: 3px;
+        color: #666;
+    }
+    .slide-preview .slide-title {
+        font-size: 10px;
+        font-weight: bold;
+        margin-top: 16px;
+        margin-bottom: 4px;
+        padding-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .slide-preview .slide-body {
+        font-size: 8px;
+        line-height: 1.5;
+        color: #555;
+    }
+    .slide-preview .slide-body-item {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .slide-preview .two-col {
+        display: flex;
+        gap: 6px;
+    }
+    .slide-preview .col-half {
+        flex: 1;
+        min-width: 0;
+    }
+    .slide-preview .col-title {
+        font-size: 8px;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+    .slide-preview .key-msg {
+        text-align: center;
+        font-size: 11px;
+        font-weight: bold;
+        margin: 8px 0;
+        padding: 6px 4px;
+    }
+    .slide-preview .comp-label {
+        text-align: center;
+        color: #fff;
+        font-size: 8px;
+        font-weight: bold;
+        padding: 2px 0;
+        border-radius: 2px;
+        margin-bottom: 3px;
+    }
+    .slide-preview .comp-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        padding: 0 2px;
+    }
+    .slide-preview-title-slide {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+    }
+    .slide-preview-title-slide .main-title {
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .slide-preview-title-slide .sub-title {
+        font-size: 9px;
+        margin-top: 4px;
+    }
+    .slide-preview-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        font-weight: bold;
+        font-size: 11px;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# スライドタイプの定義（日本語ラベル→内部名）
+SLIDE_TYPE_MAP = {
+    "コンテンツ（箇条書き）": "content",
+    "2カラム": "two_column",
+    "キーメッセージ": "key_message",
+    "Before / After 比較": "comparison",
+    "テーブル": "table",
+    "グラフ": "chart",
+    "セクション区切り": "section",
+    "画像": "image",
+}
+# 逆引き
+SLIDE_TYPE_LABELS = {v: k for k, v in SLIDE_TYPE_MAP.items()}
 
 
 def load_color_schemes():
@@ -111,30 +218,21 @@ def build_data_from_form(title, subtitle, author, slides_data):
 def render_slide_editor(index, slide=None):
     """スライド編集UIを描画"""
     slide = slide or {}
-    slide_types = {
-        "コンテンツ（箇条書き）": "content",
-        "テーブル": "table",
-        "グラフ": "chart",
-        "セクション区切り": "section",
-        "画像": "image",
-    }
 
     col1, col2 = st.columns([1, 3])
 
     with col1:
         current_type = slide.get("type", "content")
-        # 日本語ラベルに変換
-        type_labels = {v: k for k, v in slide_types.items()}
-        default_label = type_labels.get(current_type, "コンテンツ（箇条書き）")
-        default_idx = list(slide_types.keys()).index(default_label)
+        default_label = SLIDE_TYPE_LABELS.get(current_type, "コンテンツ（箇条書き）")
+        default_idx = list(SLIDE_TYPE_MAP.keys()).index(default_label)
 
         selected_type = st.selectbox(
             "種別",
-            list(slide_types.keys()),
+            list(SLIDE_TYPE_MAP.keys()),
             index=default_idx,
             key=f"type_{index}"
         )
-        slide_type = slide_types[selected_type]
+        slide_type = SLIDE_TYPE_MAP[selected_type]
 
     with col2:
         slide_title = st.text_input(
@@ -145,7 +243,8 @@ def render_slide_editor(index, slide=None):
 
     result = {"type": slide_type, "title": slide_title}
 
-    # タイプ別の入力フィールド
+    # === タイプ別の入力フィールド ===
+
     if slide_type == "content":
         body_text = st.text_area(
             "内容（1行ごとに箇条書き項目）",
@@ -154,6 +253,79 @@ def render_slide_editor(index, slide=None):
             key=f"body_{index}"
         )
         result["body"] = [line.strip() for line in body_text.split("\n") if line.strip()]
+
+    elif slide_type == "two_column":
+        c_left, c_right = st.columns(2)
+        with c_left:
+            result["left_title"] = st.text_input(
+                "左カラム見出し",
+                value=slide.get("left_title", ""),
+                key=f"left_title_{index}"
+            )
+            left_text = st.text_area(
+                "左カラム内容（1行ごと）",
+                value="\n".join(slide.get("left_body", [])) if isinstance(slide.get("left_body"), list) else slide.get("left_body", ""),
+                height=100,
+                key=f"left_body_{index}"
+            )
+            result["left_body"] = [l.strip() for l in left_text.split("\n") if l.strip()]
+        with c_right:
+            result["right_title"] = st.text_input(
+                "右カラム見出し",
+                value=slide.get("right_title", ""),
+                key=f"right_title_{index}"
+            )
+            right_text = st.text_area(
+                "右カラム内容（1行ごと）",
+                value="\n".join(slide.get("right_body", [])) if isinstance(slide.get("right_body"), list) else slide.get("right_body", ""),
+                height=100,
+                key=f"right_body_{index}"
+            )
+            result["right_body"] = [l.strip() for l in right_text.split("\n") if l.strip()]
+
+    elif slide_type == "key_message":
+        result["message"] = st.text_input(
+            "キーメッセージ（中央に大きく表示）",
+            value=slide.get("message", ""),
+            key=f"message_{index}",
+            placeholder="例: 売上は前年比120%で推移"
+        )
+        body_text = st.text_area(
+            "根拠・補足（1行ごと）",
+            value="\n".join(slide.get("body", [])) if isinstance(slide.get("body"), list) else slide.get("body", ""),
+            height=80,
+            key=f"keybody_{index}"
+        )
+        result["body"] = [line.strip() for line in body_text.split("\n") if line.strip()]
+
+    elif slide_type == "comparison":
+        c_left, c_right = st.columns(2)
+        with c_left:
+            result["before_title"] = st.text_input(
+                "Beforeラベル",
+                value=slide.get("before_title", "Before"),
+                key=f"before_title_{index}"
+            )
+            before_text = st.text_area(
+                "Before内容（1行ごと）",
+                value="\n".join(slide.get("before_items", [])) if isinstance(slide.get("before_items"), list) else slide.get("before_items", ""),
+                height=100,
+                key=f"before_items_{index}"
+            )
+            result["before_items"] = [l.strip() for l in before_text.split("\n") if l.strip()]
+        with c_right:
+            result["after_title"] = st.text_input(
+                "Afterラベル",
+                value=slide.get("after_title", "After"),
+                key=f"after_title_{index}"
+            )
+            after_text = st.text_area(
+                "After内容（1行ごと）",
+                value="\n".join(slide.get("after_items", [])) if isinstance(slide.get("after_items"), list) else slide.get("after_items", ""),
+                height=100,
+                key=f"after_items_{index}"
+            )
+            result["after_items"] = [l.strip() for l in after_text.split("\n") if l.strip()]
 
     elif slide_type == "table":
         st.caption("ヘッダー（カンマ区切り）")
@@ -233,11 +405,193 @@ def render_slide_editor(index, slide=None):
     return result
 
 
+def _escape_html(text):
+    """HTMLエスケープ"""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def render_slide_preview_html(slide_data, slide_num, scheme):
+    """スライドデータからHTMLプレビューを生成"""
+    stype = slide_data.get("type", "content")
+    title = _escape_html(slide_data.get("title", ""))
+    accent = scheme.get("accent_color", "4472C4")
+    heading_c = scheme.get("heading_color", "1F4E79")
+    text_c = scheme.get("text_color", "333333")
+    bg_c = scheme.get("bg_color", "FFFFFF")
+    accent_light = scheme.get("accent_light", "D6E4F0")
+    section_bg = scheme.get("section_bg", accent)
+    section_text = scheme.get("section_text", "FFFFFF")
+    type_label = SLIDE_TYPE_LABELS.get(stype, stype)
+
+    # タイトルスライド
+    if stype == "title":
+        subtitle = _escape_html(slide_data.get("subtitle", ""))
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">タイトル</span>
+            <div class="slide-preview-title-slide">
+                <div style="width:40%;height:2px;background:#{accent};margin-bottom:6px;"></div>
+                <div class="main-title" style="color:#{heading_c};">{title}</div>
+                <div class="sub-title" style="color:#{accent};">{subtitle}</div>
+            </div>
+        </div>"""
+
+    # セクション区切り
+    if stype == "section":
+        return f"""
+        <div class="slide-preview" style="background:#{section_bg};">
+            <span class="slide-num" style="color:rgba(255,255,255,0.5);">{slide_num}</span>
+            <span class="slide-badge" style="background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);">セクション</span>
+            <div class="slide-preview-section" style="color:#{section_text};">{title}</div>
+        </div>"""
+
+    # コンテンツ（箇条書き）
+    if stype == "content":
+        body = slide_data.get("body", [])
+        if isinstance(body, str):
+            body = [body]
+        items_html = "".join(
+            f'<div class="slide-body-item">&bull; {_escape_html(item)}</div>' for item in body[:5]
+        )
+        if len(body) > 5:
+            items_html += '<div class="slide-body-item" style="color:#aaa;">...</div>'
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">{type_label}</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div class="slide-body" style="color:#{text_c};">{items_html}</div>
+        </div>"""
+
+    # 2カラム
+    if stype == "two_column":
+        lt = _escape_html(slide_data.get("left_title", ""))
+        rt = _escape_html(slide_data.get("right_title", ""))
+        lb = slide_data.get("left_body", [])
+        rb = slide_data.get("right_body", [])
+        left_items = "".join(f'<div class="slide-body-item">&bull; {_escape_html(i)}</div>' for i in lb[:3])
+        right_items = "".join(f'<div class="slide-body-item">&bull; {_escape_html(i)}</div>' for i in rb[:3])
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">2カラム</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div class="two-col">
+                <div class="col-half">
+                    <div class="col-title" style="color:#{accent};">{lt}</div>
+                    <div class="slide-body" style="color:#{text_c};">{left_items}</div>
+                </div>
+                <div style="width:1px;background:#{accent_light};"></div>
+                <div class="col-half">
+                    <div class="col-title" style="color:#{accent};">{rt}</div>
+                    <div class="slide-body" style="color:#{text_c};">{right_items}</div>
+                </div>
+            </div>
+        </div>"""
+
+    # キーメッセージ
+    if stype == "key_message":
+        msg = _escape_html(slide_data.get("message", ""))
+        body = slide_data.get("body", [])
+        items_html = "".join(f'<div class="slide-body-item">&bull; {_escape_html(i)}</div>' for i in body[:3])
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">Key Message</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div class="key-msg" style="color:#{accent};">{msg}</div>
+            <div style="width:50%;height:1px;background:#{accent_light};margin:0 auto 4px;"></div>
+            <div class="slide-body" style="color:#{text_c};text-align:center;">{items_html}</div>
+        </div>"""
+
+    # Before/After比較
+    if stype == "comparison":
+        bt = _escape_html(slide_data.get("before_title", "Before"))
+        at = _escape_html(slide_data.get("after_title", "After"))
+        bi = slide_data.get("before_items", [])
+        ai = slide_data.get("after_items", [])
+        b_items = "".join(f'<div class="slide-body-item">&bull; {_escape_html(i)}</div>' for i in bi[:3])
+        a_items = "".join(f'<div class="slide-body-item">&bull; {_escape_html(i)}</div>' for i in ai[:3])
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">比較</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div class="two-col">
+                <div class="col-half">
+                    <div class="comp-label" style="background:#E74C3C;">{bt}</div>
+                    <div class="slide-body" style="color:#{text_c};">{b_items}</div>
+                </div>
+                <div class="comp-arrow" style="color:#{accent};">→</div>
+                <div class="col-half">
+                    <div class="comp-label" style="background:#27AE60;">{at}</div>
+                    <div class="slide-body" style="color:#{text_c};">{a_items}</div>
+                </div>
+            </div>
+        </div>"""
+
+    # テーブル
+    if stype == "table":
+        headers = slide_data.get("headers", [])
+        rows = slide_data.get("rows", [])
+        header_bg = scheme.get("table_header_bg", accent)
+        header_text = scheme.get("table_header_text", "FFFFFF")
+        if headers:
+            hdr = "".join(f'<th style="background:#{header_bg};color:#{header_text};padding:1px 3px;font-size:7px;">{_escape_html(h)}</th>' for h in headers[:5])
+            row_html = ""
+            for r_idx, row in enumerate(rows[:3]):
+                cells = "".join(f'<td style="padding:1px 3px;font-size:7px;">{_escape_html(str(c))}</td>' for c in row[:5])
+                row_html += f"<tr>{cells}</tr>"
+            return f"""
+            <div class="slide-preview" style="background:#{bg_c};">
+                <span class="slide-num">{slide_num}</span>
+                <span class="slide-badge">テーブル</span>
+                <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+                <table style="width:100%;border-collapse:collapse;margin-top:2px;"><tr>{hdr}</tr>{row_html}</table>
+            </div>"""
+
+    # グラフ
+    if stype == "chart":
+        chart_type = slide_data.get("chart_type", "bar")
+        chart_label = {"bar": "棒", "line": "折線", "pie": "円"}.get(chart_type, chart_type)
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">グラフ</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div style="text-align:center;margin-top:8px;">
+                <div style="display:inline-block;width:60%;height:40px;border:1px dashed #{accent};border-radius:4px;display:flex;align-items:center;justify-content:center;color:#{accent};font-size:9px;">{chart_label}グラフ</div>
+            </div>
+        </div>"""
+
+    # 画像
+    if stype == "image":
+        img_path = _escape_html(slide_data.get("image_path", ""))
+        return f"""
+        <div class="slide-preview" style="background:#{bg_c};">
+            <span class="slide-num">{slide_num}</span>
+            <span class="slide-badge">画像</span>
+            <div class="slide-title" style="color:#{heading_c};border-bottom:2px solid #{accent};">{title}</div>
+            <div style="text-align:center;margin-top:8px;">
+                <div style="display:inline-block;width:50%;height:35px;background:#f0f0f0;border:1px dashed #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#999;">🖼 {img_path}</div>
+            </div>
+        </div>"""
+
+    # フォールバック
+    return f"""
+    <div class="slide-preview" style="background:#{bg_c};">
+        <span class="slide-num">{slide_num}</span>
+        <span class="slide-badge">{type_label}</span>
+        <div class="slide-title" style="color:#{heading_c};">{title}</div>
+    </div>"""
+
+
 def main():
     st.title("📊 資料メーカー")
     st.caption("PowerPointプレゼンテーションを簡単に自動生成")
 
-    # サイドバー: テンプレート＆カラー選択
+    # サイドバー: テンプレート＆カラー選択＆プレビュー
     with st.sidebar:
         st.header("⚙️ 設定")
 
@@ -256,7 +610,6 @@ def main():
         st.subheader("🎨 カラースキーム")
         color_schemes = load_color_schemes()
 
-        # カラーパレット表示
         color_options = {}
         for name, scheme in color_schemes.items():
             accent = scheme.get("accent_color", "4472C4")
@@ -271,7 +624,6 @@ def main():
         )
         selected_color = color_options[selected_color_label]
 
-        # 選択中のカラーのプレビュー
         scheme = color_schemes[selected_color]
         accent = scheme.get("accent_color", "4472C4")
         secondary = scheme.get("secondary_color", accent)
@@ -290,27 +642,22 @@ def main():
             unsafe_allow_html=True
         )
 
+        st.markdown("---")
+
+        # === サイドバー内プレビュー ===
+        st.subheader("📋 スライドプレビュー")
+
     # メインエリア: タブ切り替え
     tab_manual, tab_file, tab_json = st.tabs(["✏️ 手動入力", "📁 ファイル読み込み", "📄 JSON直接入力"])
 
     # === タブ1: 手動入力 ===
     with tab_manual:
-        col_left, col_right = st.columns([2, 1])
-
-        with col_left:
-            pres_title = st.text_input("プレゼンタイトル", value="", placeholder="例: Q4 業績報告")
-            c1, c2 = st.columns(2)
-            with c1:
-                pres_subtitle = st.text_input("サブタイトル", value="", placeholder="例: 2025年度第4四半期")
-            with c2:
-                pres_author = st.text_input("作成者", value="", placeholder="例: 営業部")
-
-        with col_right:
-            st.markdown("##### プレビュー情報")
-            st.info(
-                f"**テンプレート**: {selected_template_label}\n\n"
-                f"**カラー**: {scheme.get('description', selected_color)}"
-            )
+        pres_title = st.text_input("プレゼンタイトル", value="", placeholder="例: Q4 業績報告")
+        col_sub, col_author = st.columns(2)
+        with col_sub:
+            pres_subtitle = st.text_input("サブタイトル", value="", placeholder="例: 2025年度第4四半期")
+        with col_author:
+            pres_author = st.text_input("作成者", value="", placeholder="例: 営業部")
 
         st.markdown("---")
 
@@ -320,25 +667,61 @@ def main():
         if "slides" not in st.session_state:
             st.session_state.slides = [{"type": "content", "title": "", "body": []}]
 
-        # スライド追加・削除ボタン
-        col_add, col_remove = st.columns(2)
-        with col_add:
-            if st.button("+ スライド追加"):
+        # スライド管理ボタン
+        col_a, col_b, col_c, col_d = st.columns(4)
+        with col_a:
+            if st.button("+ 追加"):
                 st.session_state.slides.append({"type": "content", "title": "", "body": []})
                 st.experimental_rerun()
-        with col_remove:
+        with col_b:
             if len(st.session_state.slides) > 1:
-                if st.button("- 最後を削除"):
+                if st.button("- 削除"):
                     st.session_state.slides.pop()
                     st.experimental_rerun()
+        with col_c:
+            if st.button("複製"):
+                import copy
+                if st.session_state.slides:
+                    st.session_state.slides.append(copy.deepcopy(st.session_state.slides[-1]))
+                    st.experimental_rerun()
+        with col_d:
+            if len(st.session_state.slides) > 1:
+                move_idx = st.number_input(
+                    "移動対象",
+                    min_value=1,
+                    max_value=len(st.session_state.slides),
+                    value=len(st.session_state.slides),
+                    key="move_idx",
+                    help="移動するスライド番号"
+                )
+
+        # 並び替えボタン
+        if len(st.session_state.slides) > 1:
+            col_up, col_down, _ = st.columns([1, 1, 4])
+            with col_up:
+                if st.button("↑ 上へ"):
+                    idx = st.session_state.get("move_idx", len(st.session_state.slides)) - 1
+                    if 0 < idx < len(st.session_state.slides):
+                        st.session_state.slides[idx - 1], st.session_state.slides[idx] = \
+                            st.session_state.slides[idx], st.session_state.slides[idx - 1]
+                        st.experimental_rerun()
+            with col_down:
+                if st.button("↓ 下へ"):
+                    idx = st.session_state.get("move_idx", len(st.session_state.slides)) - 1
+                    if 0 <= idx < len(st.session_state.slides) - 1:
+                        st.session_state.slides[idx], st.session_state.slides[idx + 1] = \
+                            st.session_state.slides[idx + 1], st.session_state.slides[idx]
+                        st.experimental_rerun()
 
         # 各スライドの編集
         slides_data = []
         for i in range(len(st.session_state.slides)):
-            with st.expander(f"スライド {i + 1}", expanded=(i < 3)):
+            slide_label = SLIDE_TYPE_LABELS.get(
+                st.session_state.slides[i].get("type", "content"), "コンテンツ"
+            )
+            with st.expander(f"スライド {i + 1} - {slide_label}", expanded=(i < 2)):
                 slide_result = render_slide_editor(i, st.session_state.slides[i])
                 slides_data.append(slide_result)
-                # セッションに反映
                 st.session_state.slides[i] = slide_result
 
         st.markdown("---")
@@ -351,6 +734,23 @@ def main():
                 data = build_data_from_form(pres_title, pres_subtitle, pres_author, slides_data)
                 _generate_and_download(data, selected_template, selected_color, pres_title)
 
+        # サイドバーにプレビュー描画
+        with st.sidebar:
+            title_slide = {
+                "type": "title",
+                "title": pres_title or "タイトル",
+                "subtitle": pres_subtitle
+            }
+            st.markdown(
+                render_slide_preview_html(title_slide, 1, scheme),
+                unsafe_allow_html=True
+            )
+            for i, slide in enumerate(st.session_state.get("slides", [])):
+                st.markdown(
+                    render_slide_preview_html(slide, i + 2, scheme),
+                    unsafe_allow_html=True
+                )
+
     # === タブ2: ファイル読み込み ===
     with tab_file:
         st.markdown("JSON / CSV / テキストファイルをアップロードして自動変換")
@@ -361,7 +761,6 @@ def main():
         )
 
         if uploaded:
-            # 一時ファイルに保存して読み込み
             import tempfile
             ext = os.path.splitext(uploaded.name)[1]
             with tempfile.NamedTemporaryFile(suffix=ext, delete=False, mode="wb") as tmp:
@@ -372,9 +771,16 @@ def main():
                 data = load_from_file(tmp_path)
                 st.success(f"読み込み完了: {len(data.get('slides', []))} スライド")
 
-                # プレビュー表示
-                with st.expander("データプレビュー", expanded=True):
+                with st.expander("データプレビュー", expanded=False):
                     st.json(data)
+
+                # スライドプレビューをサイドバーに表示
+                with st.sidebar:
+                    for i, slide in enumerate(data.get("slides", [])):
+                        st.markdown(
+                            render_slide_preview_html(slide, i + 1, scheme),
+                            unsafe_allow_html=True
+                        )
 
                 file_title = data.get("title", uploaded.name)
 
@@ -390,19 +796,33 @@ def main():
         st.markdown("JSONを直接編集してスライドを定義")
 
         sample_json = json.dumps({
-            "title": "サンプル",
+            "title": "サンプルプレゼンテーション",
             "slides": [
-                {"type": "title", "title": "サンプル", "subtitle": "テスト"},
-                {"type": "content", "title": "項目", "body": ["内容1", "内容2"]},
+                {"type": "title", "title": "サンプルプレゼンテーション", "subtitle": "自動生成デモ"},
+                {"type": "key_message", "title": "結論", "message": "売上は前年比120%で成長", "body": ["EC事業が牽引", "新規顧客の獲得が好調"]},
+                {"type": "two_column", "title": "分析", "left_title": "強み", "left_body": ["ブランド力", "技術力"], "right_title": "課題", "right_body": ["人材確保", "コスト最適化"]},
+                {"type": "content", "title": "アクションプラン", "body": ["採用強化", "DX推進", "海外展開"]},
             ]
         }, ensure_ascii=False, indent=2)
 
         json_input = st.text_area(
             "JSONデータ",
             value=sample_json,
-            height=300,
+            height=400,
             key="json_input"
         )
+
+        # JSONプレビューをサイドバーに表示
+        try:
+            preview_data = json.loads(json_input)
+            with st.sidebar:
+                for i, slide in enumerate(preview_data.get("slides", [])):
+                    st.markdown(
+                        render_slide_preview_html(slide, i + 1, scheme),
+                        unsafe_allow_html=True
+                    )
+        except (json.JSONDecodeError, TypeError):
+            pass
 
         if st.button("🚀 PowerPointを生成", type="primary", use_container_width=True, key="gen_json"):
             try:

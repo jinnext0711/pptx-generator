@@ -111,6 +111,70 @@ class TestPresentationBuilder:
         assert "dark" in names
         assert "green" in names
 
+    def test_two_column_slide(self):
+        """2カラムスライドの生成"""
+        data = {
+            "title": "2カラムテスト",
+            "slides": [
+                {"type": "two_column", "title": "比較分析",
+                 "left_title": "現状", "left_body": ["課題1", "課題2"],
+                 "right_title": "提案", "right_body": ["解決策1", "解決策2"]},
+            ]
+        }
+        builder = PresentationBuilder()
+        prs = builder.build(data)
+        assert len(prs.slides) == 1
+
+    def test_key_message_slide(self):
+        """キーメッセージスライドの生成"""
+        data = {
+            "title": "KMテスト",
+            "slides": [
+                {"type": "key_message", "title": "結論",
+                 "message": "売上は前年比120%",
+                 "body": ["EC事業が牽引", "新規顧客の獲得"]},
+            ]
+        }
+        builder = PresentationBuilder()
+        prs = builder.build(data)
+        assert len(prs.slides) == 1
+
+    def test_comparison_slide(self):
+        """Before/After比較スライドの生成"""
+        data = {
+            "title": "比較テスト",
+            "slides": [
+                {"type": "comparison", "title": "改善効果",
+                 "before_title": "Before", "before_items": ["手作業", "3日かかる"],
+                 "after_title": "After", "after_items": ["自動化", "30分で完了"]},
+            ]
+        }
+        builder = PresentationBuilder()
+        prs = builder.build(data)
+        assert len(prs.slides) == 1
+
+    def test_all_new_slide_types_combined(self):
+        """新旧スライドタイプを組み合わせた生成"""
+        data = {
+            "title": "統合テスト",
+            "slides": [
+                {"type": "title", "title": "タイトル", "subtitle": "サブ"},
+                {"type": "key_message", "title": "結論", "message": "成長中"},
+                {"type": "two_column", "title": "分析",
+                 "left_title": "A", "left_body": ["a1"],
+                 "right_title": "B", "right_body": ["b1"]},
+                {"type": "comparison", "title": "変化",
+                 "before_items": ["旧"], "after_items": ["新"]},
+                {"type": "content", "title": "詳細", "body": ["x"]},
+                {"type": "table", "title": "表",
+                 "headers": ["H"], "rows": [["1"]]},
+                {"type": "section", "title": "セクション"},
+            ]
+        }
+        builder = PresentationBuilder(template_name="default", color_name="blue")
+        prs = builder.build(data)
+        assert len(prs.slides) == 7
+
 
 class TestDataLoader:
     """data_loaderのテスト"""
